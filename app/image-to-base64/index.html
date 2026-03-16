@@ -72,12 +72,13 @@
       </div>
     </div>
 
-    <!-- Preview image — shown via blob: URL immediately after file selection -->
-    <!-- Opens in background tab on click (middle-click or Ctrl+click works natively) -->
-    <img id="dz-thumb" class="dz-thumb" alt="Preview of selected image"
-         style="display:none" loading="lazy"/>
+    <!-- bg-preview wrapper — shown via CSS background-image using blob: URL -->
+    <!-- middle-click / Ctrl+click on the div opens image in background tab -->
+    <div id="dz-thumb-wrap" style="display:none" aria-label="Image preview">
+      <!-- .bg-preview div injected here by encoder.js -->
+    </div>
 
-    <!-- Blob URL clickable link (shown after image loaded) -->
+    <!-- Blob URL clickable link -->
     <div id="blob-link-wrap" aria-label="Blob preview URL" style="display:none"></div>
 
     <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Drop image here or click to browse" style="margin-top:1rem">

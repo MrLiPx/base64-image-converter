@@ -1,6 +1,8 @@
 /* ================================================================
    decoder.js — Base64 → Image converter logic
-   Decodes to Blob, previews via blob: URL, supports download
+   Uses background-image CSS on a div for the preview panel.
+   The blob: URL is set as background-image, so the browser
+   renders it exactly like a normal background — no <img> tag.
    ================================================================ */
 (function () {
   'use strict';
@@ -77,19 +79,17 @@
     /* Update blob URL link */
     renderBlobLink(_blobUrl);
 
-    var img = new Image();
-    img.onload = function () {
-      renderPreview(img, blob, mime);
+    /* Use an offscreen Image() only to get natural dimensions — no DOM insertion */
+    var probe = new Image();
+    probe.onload = function () {
+      renderPreview(blob, mime, probe.naturalWidth, probe.naturalHeight);
       document.getElementById('dl-btn').disabled = false;
       showToast('Converted successfully', 'success');
     };
-    img.onerror = function () {
-      /* SVG fallback */
+    probe.onerror = function () {
+      /* SVG: dimensions not available, render anyway */
       if (mime === 'image/svg+xml') {
-        var svgImg = new Image();
-        svgImg.src = _blobUrl;
-        svgImg.alt = 'Converted SVG';
-        renderPreviewRaw(svgImg, blob, mime, 0, 0);
+        renderPreview(blob, mime, 0, 0);
         document.getElementById('dl-btn').disabled = false;
         showToast('Converted successfully', 'success');
       } else {
@@ -99,7 +99,7 @@
         document.getElementById('dl-btn').disabled = true;
       }
     };
-    img.src = _blobUrl;
+    probe.src = _blobUrl;
   };
 
   /* ── Render blob: URL as a clickable link ── */
@@ -110,33 +110,44 @@
       '<a href="' + url + '" target="_blank" rel="noopener noreferrer" class="blob-link" title="Open image in new tab">' +
       '<i class="fi fi-rr-link" aria-hidden="true"></i>' +
       '<span class="blob-link-url">' + url + '</span>' +
-      '<i class="fi fi-rr-arrow-up-right-from-square" aria-hidden="true"></i>' +
+      '<i class="fi fi-rr-arrow-right" aria-hidden="true"></i>' +
       '</a>';
     wrap.style.display = '';
   }
 
-  /* ── Render preview ── */
-  function renderPreview(imgEl, blob, mime) {
-    imgEl.alt = 'Converted image';
-    imgEl.style.cssText = 'max-width:100%;max-height:520px;display:block;margin:1.25rem auto;border-radius:6px;cursor:pointer;';
-    imgEl.title = 'Click to open in new tab';
-    imgEl.addEventListener('click', function () {
-      window.open(_blobUrl, '_blank', 'noopener,noreferrer');
-    });
-    renderPreviewRaw(imgEl, blob, mime, imgEl.naturalWidth, imgEl.naturalHeight);
-  }
-
-  function renderPreviewRaw(imgEl, blob, mime, w, h) {
+  /* ── Render preview as CSS background-image div ── */
+  function renderPreview(blob, mime, w, h) {
     var area  = document.getElementById('preview-area');
     var ph    = document.getElementById('preview-ph');
     var meta  = document.getElementById('img-meta');
     var badge = document.getElementById('fmt-badge');
 
-    var old = area.querySelector('img');
+    /* Remove any previous bg-preview div */
+    var old = area.querySelector('.bg-preview');
     if (old) old.remove();
+
     ph.style.display = 'none';
     area.classList.add('loaded');
-    area.insertBefore(imgEl, meta);
+
+    /* Create a div that shows the image via background-image */
+    var bgDiv = document.createElement('div');
+    bgDiv.className = 'bg-preview';
+    bgDiv.setAttribute('role', 'img');
+    bgDiv.setAttribute('aria-label', 'Converted image preview');
+    bgDiv.title = 'Click to open in new tab';
+
+    /* Set background-image to the blob: URL */
+    bgDiv.style.backgroundImage  = 'url("' + _blobUrl + '")';
+    bgDiv.style.backgroundRepeat = 'no-repeat';
+    bgDiv.style.backgroundSize   = 'contain';
+    bgDiv.style.backgroundPosition = 'center';
+
+    /* Click opens blob URL in a new background tab */
+    bgDiv.addEventListener('click', function () {
+      window.open(_blobUrl, '_blank', 'noopener,noreferrer');
+    });
+
+    area.insertBefore(bgDiv, meta);
 
     /* Format badge */
     var extMap = {
@@ -196,7 +207,7 @@
     _mime = null;
 
     var area = document.getElementById('preview-area');
-    var old  = area.querySelector('img');
+    var old  = area.querySelector('.bg-preview');
     if (old) old.remove();
     document.getElementById('preview-ph').style.display = '';
     document.getElementById('img-meta').classList.remove('visible');

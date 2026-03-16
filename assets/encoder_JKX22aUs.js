@@ -1,6 +1,8 @@
 /* ================================================================
    encoder.js — Image → Base64 converter logic
-   Uses blob: URL for fast preview (no base64 in src attribute)
+   Uses CSS background-image on a div for the preview panel.
+   The blob: URL is set as background-image so no <img> tag is
+   needed — browser renders it like a normal CSS background.
    ================================================================ */
 (function () {
   'use strict';
@@ -60,29 +62,20 @@
     /* Revoke previous blob URL */
     if (_blobUrl) { URL.revokeObjectURL(_blobUrl); _blobUrl = null; }
 
-    /* Create blob: URL — used for BOTH the preview img src AND the link.
-       This means the browser never needs to parse a huge base64 string
-       just to show the thumbnail. Fast, memory-efficient. */
+    /* Create blob: URL — instant reference, no encoding needed */
     _blobUrl = URL.createObjectURL(file);
 
-    /* Show preview thumbnail immediately using blob: URL (no FileReader needed) */
-    var thumb = document.getElementById('dz-thumb');
-    thumb.src   = _blobUrl;   /* ← blob: not base64 */
-    thumb.style.display = 'block';
-    thumb.style.cursor  = 'pointer';
-    thumb.title = 'Click to open in new tab';
-    thumb.onclick = function () {
-      window.open(_blobUrl, '_blank', 'noopener,noreferrer');
-    };
+    /* Render background-image preview immediately using blob: URL */
+    renderBgPreview(_blobUrl);
 
     /* Blob URL link */
     renderBlobLink(_blobUrl);
 
-    /* Update drop zone label right away */
+    /* Update drop zone label */
     var dzTitle = document.querySelector('.dz-title');
     if (dzTitle) dzTitle.textContent = file.name;
 
-    /* Now read as base64 for the output textarea (background) */
+    /* FileReader runs in background to produce base64 output */
     var reader = new FileReader();
     reader.onload = function (e) {
       _dataUrl = e.target.result;
@@ -105,6 +98,35 @@
 
   /* Expose so the inline onchange handler can call it */
   window.handleFile = function (file) { handleFile(file); };
+
+  /* ── Render preview as CSS background-image div ── */
+  function renderBgPreview(url) {
+    var container = document.getElementById('dz-thumb-wrap');
+    if (!container) return;
+
+    /* Get or create the background div */
+    var bgDiv = container.querySelector('.bg-preview');
+    if (!bgDiv) {
+      bgDiv = document.createElement('div');
+      bgDiv.className = 'bg-preview bg-preview--encoder';
+      bgDiv.setAttribute('role', 'img');
+      bgDiv.setAttribute('aria-label', 'Preview of uploaded image');
+      bgDiv.title = 'Click to open in new tab';
+      bgDiv.addEventListener('click', function () {
+        if (_blobUrl) window.open(_blobUrl, '_blank', 'noopener,noreferrer');
+      });
+      container.appendChild(bgDiv);
+    }
+
+    /* Set the blob: URL as background-image — fast, no base64 in DOM */
+    bgDiv.style.backgroundImage    = 'url("' + url + '")';
+    bgDiv.style.backgroundRepeat   = 'no-repeat';
+    bgDiv.style.backgroundSize     = 'contain';
+    bgDiv.style.backgroundPosition = 'center';
+    bgDiv.style.backgroundAttachment = 'local'; /* scrolls with content */
+
+    container.style.display = '';
+  }
 
   /* ── Render blob: URL as clickable link ── */
   function renderBlobLink(url) {
@@ -177,10 +199,13 @@
     var fi = document.getElementById('file-input');
     if (fi) fi.value = '';
 
-    var thumb = document.getElementById('dz-thumb');
-    thumb.style.display = 'none';
-    thumb.src     = '';
-    thumb.onclick = null;
+    /* Hide bg-preview container */
+    var container = document.getElementById('dz-thumb-wrap');
+    if (container) {
+      container.style.display = 'none';
+      var bgDiv = container.querySelector('.bg-preview');
+      if (bgDiv) bgDiv.style.backgroundImage = '';
+    }
 
     var blobWrap = document.getElementById('blob-link-wrap');
     if (blobWrap) { blobWrap.innerHTML = ''; blobWrap.style.display = 'none'; }
