@@ -1,6 +1,6 @@
 /* ================================================================
    encoder.js — Image → Base64 converter logic
-   Reads image via FileReader, generates blob: URL for preview link
+   Uses blob: URL for fast preview (no base64 in src attribute)
    ================================================================ */
 (function () {
   'use strict';
@@ -60,29 +60,32 @@
     /* Revoke previous blob URL */
     if (_blobUrl) { URL.revokeObjectURL(_blobUrl); _blobUrl = null; }
 
-    /* Create blob: URL for preview link (opens in new tab) */
+    /* Create blob: URL — used for BOTH the preview img src AND the link.
+       This means the browser never needs to parse a huge base64 string
+       just to show the thumbnail. Fast, memory-efficient. */
     _blobUrl = URL.createObjectURL(file);
 
+    /* Show preview thumbnail immediately using blob: URL (no FileReader needed) */
+    var thumb = document.getElementById('dz-thumb');
+    thumb.src   = _blobUrl;   /* ← blob: not base64 */
+    thumb.style.display = 'block';
+    thumb.style.cursor  = 'pointer';
+    thumb.title = 'Click to open in new tab';
+    thumb.onclick = function () {
+      window.open(_blobUrl, '_blank', 'noopener,noreferrer');
+    };
+
+    /* Blob URL link */
+    renderBlobLink(_blobUrl);
+
+    /* Update drop zone label right away */
+    var dzTitle = document.querySelector('.dz-title');
+    if (dzTitle) dzTitle.textContent = file.name;
+
+    /* Now read as base64 for the output textarea (background) */
     var reader = new FileReader();
     reader.onload = function (e) {
       _dataUrl = e.target.result;
-
-      /* Thumbnail — clickable, opens blob URL in new tab */
-      var thumb = document.getElementById('dz-thumb');
-      thumb.src   = _dataUrl;
-      thumb.style.display = 'block';
-      thumb.style.cursor  = 'pointer';
-      thumb.title = 'Click to open in new tab';
-      thumb.onclick = function () {
-        window.open(_blobUrl, '_blank', 'noopener,noreferrer');
-      };
-
-      /* Blob URL link */
-      renderBlobLink(_blobUrl);
-
-      /* Drop zone label */
-      var dzTitle = document.querySelector('.dz-title');
-      if (dzTitle) dzTitle.textContent = file.name;
 
       document.getElementById('copy-btn').disabled  = false;
       document.getElementById('clear-btn').disabled = false;
@@ -182,7 +185,7 @@
     var blobWrap = document.getElementById('blob-link-wrap');
     if (blobWrap) { blobWrap.innerHTML = ''; blobWrap.style.display = 'none'; }
 
-    document.getElementById('b64output').value      = '';
+    document.getElementById('b64output').value       = '';
     document.getElementById('char-count').textContent = '';
 
     var dzTitle = document.querySelector('.dz-title');

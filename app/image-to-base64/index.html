@@ -22,6 +22,10 @@
   <link rel="icon" href="/base64-image-converter/assets/logo.png" type="image/png"/>
   <link rel="apple-touch-icon" href="/base64-image-converter/assets/logo.png"/>
   <link rel="manifest" href="/base64-image-converter/site.webmanifest"/>
+  <!-- Performance: preload critical assets -->
+  <link rel="preload" href="/base64-image-converter/assets/styles_Z5jCVG3c.css" as="style"/>
+  <link rel="preload" href="/base64-image-converter/assets/core_YwCdbQMX.js" as="script"/>
+  <link rel="preload" href="/base64-image-converter/assets/encoder_JKX22aUs.js" as="script"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link rel="preconnect" href="https://cdn-uicons.flaticon.com"/>
@@ -68,16 +72,20 @@
       </div>
     </div>
 
-    <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Drop image here or click to browse">
+    <!-- Preview image — shown via blob: URL immediately after file selection -->
+    <!-- Opens in background tab on click (middle-click or Ctrl+click works natively) -->
+    <img id="dz-thumb" class="dz-thumb" alt="Preview of selected image"
+         style="display:none" loading="lazy"/>
+
+    <!-- Blob URL clickable link (shown after image loaded) -->
+    <div id="blob-link-wrap" aria-label="Blob preview URL" style="display:none"></div>
+
+    <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Drop image here or click to browse" style="margin-top:1rem">
       <input type="file" id="file-input" accept="image/*" onchange="handleFile(this.files[0])" aria-label="Select image file"/>
       <div class="dz-icon-wrap" aria-hidden="true"><i class="fi fi-rr-upload"></i></div>
       <div class="dz-title">Drop image here, or <span class="dz-link">click to browse</span></div>
       <div class="dz-sub">PNG, JPEG, GIF, WebP, SVG, BMP, ICO &mdash; max 10 MB &mdash; or paste from clipboard</div>
     </div>
-    <img id="dz-thumb" class="dz-thumb" alt="Thumbnail of selected image" style="display:none"/>
-
-    <!-- Blob URL link (shown after image loaded) -->
-    <div id="blob-link-wrap" aria-label="Blob preview URL" style="display:none"></div>
 
     <div style="margin-top:1rem">
       <span class="field-label" id="fmt-label">Output Format</span>
