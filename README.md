@@ -57,4 +57,4 @@ This project is open source under the MIT License.
 
 ## 🌟 Try It Now
 
-Visit [base64toimage.github.io](https://mrlipx.github.io/base64-image-converter) to start converting!
+Visit [mrlipx.github.io/base64-image-converter](https://mrlipx.github.io/base64-image-converter) to start converting!
